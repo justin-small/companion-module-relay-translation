@@ -58,6 +58,8 @@ connects mid-event or reconnects.
 npm install
 npm run build     # tsc to dist/
 npm run lint
+npm test
+npm run check     # companion-module-check, Bitfocus's own validator
 npm run package   # companion-module-build, produces a .tgz
 ```
 
@@ -70,16 +72,46 @@ runtime, which loads in both Companion 3.x and 4.x. Base 2.x and the `node22`
 runtime are Companion 4 only; moving to them is a deliberate later decision,
 not an upgrade to make by habit.
 
-Issue 8 carries the remaining documentation work. The SSE
-client (issue 3) is the spine everything reactive hangs off; actions (issue 4)
-are fire-and-forget on top of it, and variables (issue 5), feedbacks (issue 6)
-and presets (issue 7) are computed from its merged status cache.
+The SSE client (issue 3) is the spine everything reactive hangs off; actions
+(issue 4) are fire-and-forget on top of it, and variables (issue 5), feedbacks
+(issue 6) and presets (issue 7) are computed from its merged status cache.
+
+CI runs lint, typecheck, tests, the Bitfocus validator and a packaging build
+on every push, so a change that would fail submission fails the branch
+instead.
+
+## Changelog
+
+### 1.0.0
+
+First release. Everything below works against a real Relay host.
+
+- Connection over Caddy's HTTPS port with a static admin token, an optional
+  pinned certificate fingerprint, and instance status that distinguishes a
+  rejected token from a refused certificate.
+- One held-open SSE stream with a silence watchdog and backoff reconnect; no
+  polling.
+- Actions: start, stop, toggle capture, set a target enabled, and enable only
+  one target.
+- Variables: running state, session clock, source language, viewers, live
+  target count and labels, level / RMS / peak dBFS, clipping, speaking, error
+  text, unhealthy session count, and per-target state.
+- Feedbacks: running, stopped, error, target live, target enabled-but-not-live,
+  speaking, clipping, session reconnecting, and an advanced level meter.
+- Presets for all of the above, including one per target language.
+
+Known limitation: `viewers` only refreshes when Relay pushes a full status
+frame, so it can lag. Relay's own panel has the same lag —
+[Relay#29](https://github.com/justin-small/Relay/issues/29).
 
 ## Submission
 
 The module is built to be submission-ready for the Bitfocus module list —
-manifest, help, license, CI — but submitting it is a deliberate non-goal. It is
-not an oversight.
+manifest, HELP.md, license, CI and a clean `companion-module-check` — but
+submitting it is a deliberate non-goal. It is not an oversight. If that
+changes, the work left is opening a pull request against
+[bitfocus/companion-module-requests](https://github.com/bitfocus/companion-module-requests),
+and confirming the module id does not collide with one already in the list.
 
 ## License
 
