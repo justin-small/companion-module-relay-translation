@@ -22,7 +22,7 @@ const state = () => ({
 		started_at: started.at,
 		error: null,
 		audio: {},
-		sessions: [],
+		sessions: started.at ? [{ name: 'ES', kind: 'relay', state: 'open', reconnects: 0, fatal: false }] : [],
 		viewers: 0,
 		blocklist: [],
 		source_language: 'en',
@@ -33,6 +33,19 @@ const state = () => ({
 	},
 	devices: [],
 	urls: {},
+})
+
+const meter = () => ({
+	type: 'meter',
+	running: !!started.at,
+	started_at: started.at,
+	level: Math.random() * 0.5,
+	rms_dbfs: -30,
+	peak_dbfs: -12,
+	clipping: false,
+	clipped_samples: 0,
+	speaking: !!started.at,
+	sessions: started.at ? [{ name: 'ES', state: 'open' }] : [],
 })
 
 const server = https.createServer(
@@ -47,6 +60,18 @@ const server = https.createServer(
 		if (url.pathname === '/api/admin/state') {
 			res.writeHead(200, { 'content-type': 'application/json' })
 			res.end(JSON.stringify(state()))
+			return
+		}
+		if (url.pathname === '/api/admin/status/stream') {
+			res.writeHead(200, {
+				'content-type': 'text/event-stream',
+				'cache-control': 'no-cache, no-transform',
+				'x-accel-buffering': 'no',
+			})
+			// Relay opens with a full status, then ticks a meter frame every second.
+			res.write(`data: ${JSON.stringify(state().status)}\n\n`)
+			const tick = setInterval(() => res.write(`data: ${JSON.stringify(meter())}\n\n`), 1000)
+			res.on('close', () => clearInterval(tick))
 			return
 		}
 		if (url.pathname === '/api/admin/start') {
