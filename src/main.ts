@@ -4,6 +4,7 @@ import { RelayClient, RelayError, type RelayRequest } from './client.js'
 import { StatusStream } from './stream.js'
 import { UpdateActions, targetSignature } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
+import { UpdatePresets } from './presets.js'
 import { ClockValues, DisconnectedValues, UpdateVariableDefinitions, VariableValues } from './variables.js'
 import type { RelayStatus } from './types.js'
 
@@ -82,6 +83,7 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 		UpdateActions(this)
 		UpdateFeedbacks(this)
 		UpdateVariableDefinitions(this)
+		UpdatePresets(this)
 		// Blank rather than stale: the numbers on screen must not describe a
 		// host this instance is no longer talking to.
 		this.setVariableValues(DisconnectedValues())
@@ -117,6 +119,7 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 			UpdateActions(this)
 			UpdateFeedbacks(this)
 			UpdateVariableDefinitions(this)
+			UpdatePresets(this)
 		}
 
 		this.setVariableValues({ ...VariableValues(status), ...ClockValues(status, Date.now()) })

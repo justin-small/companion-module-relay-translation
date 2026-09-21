@@ -4,10 +4,8 @@ Controls a [Relay](https://github.com/justin-small/Relay) host: start and stop
 capture, toggle target languages, watch the input meter, and run a session
 clock.
 
-> **Not finished yet.** The module holds a live connection to Relay, drives
-> it, publishes its state as variables and lights buttons from it. Presets
-> arrive in the issue that follows, so buttons have to be built by hand for
-> now.
+> The module is feature-complete: connection, actions, variables, feedbacks
+> and presets. Start from **Presets** rather than building buttons by hand.
 
 ### Connecting
 
@@ -131,6 +129,24 @@ bottom of the range.
 
 The defaults are picked to read on an unlit Stream Deck in a dark booth.
 Restyle them freely — Companion keeps your colours.
+
+### Presets
+
+Open **Presets → Relay** and drag. Every one arrives styled and wired, with no
+further configuration:
+
+- **Start**, **Stop** and a **Toggle** that shows the state as its own label.
+- **Session clock** — deliberately has no action, so brushing past it on a
+  full surface cannot start or stop the show.
+- **Audio meter** — the level in dBFS, coloured by level and going red on a
+  clip.
+- **Viewers** and a **Status at a glance** button showing running state, how
+  many languages are live, and red on any error.
+- **One toggle per language**, labelled with the language and showing `off`,
+  `enabled` or `live` beneath it. Amber when armed, green when on the air.
+
+The per-language presets are generated from whatever targets Relay currently
+offers, so changing Relay's source language changes the list.
 
 ### The certificate
 
