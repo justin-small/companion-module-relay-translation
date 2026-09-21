@@ -4,9 +4,9 @@ Controls a [Relay](https://github.com/justin-small/Relay) host: start and stop
 capture, toggle target languages, watch the input meter, and run a session
 clock.
 
-> **Not finished yet.** The module connects to Relay and reports whether the
-> connection is healthy; actions, feedbacks, variables and presets arrive in
-> the issues that follow.
+> **Not finished yet.** The module holds a live connection to Relay and
+> reports its health; actions, feedbacks, variables and presets arrive in the
+> issues that follow.
 
 ### Connecting
 
@@ -25,6 +25,17 @@ prints.
 | **Use HTTPS**                       | On for a normal install. Off only for a same-host or reverse-proxied deployment.                                          |
 | **Accept self-signed certificate**  | On by default — Relay's certificate is self-signed by design                                                              |
 | **Certificate SHA-256 fingerprint** | Optional. When set, the connection is pinned to that certificate and anything else is refused, even with the checkbox on. |
+
+### Staying connected
+
+State arrives on one server-sent-events stream that the module holds open —
+there is no polling. Relay ticks that stream about once a second, so a stream
+that goes quiet for five seconds is treated as dead even if the socket has not
+closed, and the module reconnects on its own with a backoff of 1s, 2s, 5s, 10s
+and then every 15s. Every reconnect re-reads the full state first, because the
+target list may have changed while the connection was down. Nothing needs
+restarting by hand: kill Relay mid-show and the buttons go red within a second
+or two, and go green again when it comes back.
 
 When the connection is good the instance goes green. A rejected token shows as
 an authentication failure saying so; a certificate the module will not accept

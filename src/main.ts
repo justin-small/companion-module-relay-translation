@@ -1,28 +1,26 @@
 import { InstanceBase, InstanceStatus, runEntrypoint, type SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, validateConfig, type RelayConfig } from './config.js'
 import { RelayClient, RelayError } from './client.js'
-
-/** Shape of `GET /api/admin/state` — only the part this issue needs. */
-interface RelayState {
-	status?: { running?: boolean }
-}
+import { StatusStream } from './stream.js'
+import type { RelayStatus } from './types.js'
 
 export class RelayInstance extends InstanceBase<RelayConfig> {
 	config!: RelayConfig
 	private client: RelayClient | null = null
+	private stream: StatusStream | null = null
 
 	async init(config: RelayConfig): Promise<void> {
 		this.config = config
-		await this.applyConfig()
+		this.applyConfig()
 	}
 
 	async destroy(): Promise<void> {
-		this.closeClient()
+		this.teardown()
 	}
 
 	async configUpdated(config: RelayConfig): Promise<void> {
 		this.config = config
-		await this.applyConfig()
+		this.applyConfig()
 	}
 
 	getConfigFields(): SomeCompanionConfigField[] {
@@ -34,13 +32,20 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 		return this.client
 	}
 
-	private closeClient(): void {
+	/** The most recent status, or null before the first frame. */
+	get status(): RelayStatus | null {
+		return this.stream?.lastStatus ?? null
+	}
+
+	private teardown(): void {
+		this.stream?.stop()
+		this.stream = null
 		this.client?.destroy()
 		this.client = null
 	}
 
-	private async applyConfig(): Promise<void> {
-		this.closeClient()
+	private applyConfig(): void {
+		this.teardown()
 
 		const problem = validateConfig(this.config)
 		if (problem) {
@@ -51,46 +56,31 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 		this.client = new RelayClient(this.config)
 		this.updateStatus(InstanceStatus.Connecting)
 
-		await this.probe()
+		this.stream = new StatusStream(this.client, {
+			onStatus: (status) => this.handleStatus(status),
+			onConnected: () => this.updateStatus(InstanceStatus.Ok),
+			onDisconnected: (error, retryInMs) => this.handleDisconnect(error, retryInMs),
+			log: (level, message) => this.log(level, message),
+		})
+		this.stream.start()
 	}
 
-	/**
-	 * One authenticated request, so a wrong token or an unreachable host is
-	 * reported now rather than the first time an operator presses a button.
-	 */
-	private async probe(): Promise<void> {
-		const client = this.client
-		if (!client) return
-
-		try {
-			await client.request<RelayState>({ method: 'GET', path: '/api/admin/state', timeout: 5000 })
-			if (this.client !== client) return // config changed under us
-			this.updateStatus(InstanceStatus.Ok)
-		} catch (error) {
-			if (this.client !== client) return
-			this.reportError(error)
-		}
+	private handleStatus(_status: RelayStatus): void {
+		// Variables and feedbacks hang off this in the issues that follow; the
+		// stream already caches the status for them.
 	}
 
-	/** Map a failure onto an instance status. Never surfaces the request itself. */
-	reportError(error: unknown): void {
-		const relayError =
-			error instanceof RelayError ? error : new RelayError('connection', error instanceof Error ? error.message : '')
-
-		switch (relayError.kind) {
-			case 'auth':
-				this.updateStatus(InstanceStatus.AuthenticationFailure, 'Admin token rejected')
-				break
-			case 'tls':
-			case 'connection':
-				this.updateStatus(InstanceStatus.ConnectionFailure, relayError.message)
-				break
-			default:
-				this.updateStatus(InstanceStatus.UnknownError, relayError.message)
-				break
+	private handleDisconnect(error: RelayError, retryInMs: number): void {
+		if (error.kind === 'auth') {
+			// Retrying a rejected token just fails again on a timer, but the
+			// operator still needs the connection to recover on its own once
+			// they fix it, so the stream keeps trying and the status says why.
+			this.updateStatus(InstanceStatus.AuthenticationFailure, 'Admin token rejected')
+		} else {
+			this.updateStatus(InstanceStatus.ConnectionFailure, error.message)
 		}
 
-		this.log('error', relayError.message)
+		this.log('warn', `${error.message} — retrying in ${Math.round(retryInMs / 100) / 10}s`)
 	}
 }
 

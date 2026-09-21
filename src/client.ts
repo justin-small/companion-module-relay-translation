@@ -120,6 +120,59 @@ export class RelayClient {
 		this.agent.destroy()
 	}
 
+	/**
+	 * Open a long-lived response and hand back the stream itself.
+	 *
+	 * Deliberately not `request()`: an SSE body never ends, so nothing here may
+	 * buffer it or apply an inactivity timeout to the response as a whole. The
+	 * caller owns the returned stream and must destroy it.
+	 */
+	async openStream(path: string, connectTimeout = 10000): Promise<http.IncomingMessage> {
+		const url = new URL(path, this.baseUrl)
+		const transport = this.config.https ? https : http
+
+		return new Promise<http.IncomingMessage>((resolve, reject) => {
+			const req = transport.request(
+				url,
+				{
+					method: 'GET',
+					headers: { 'x-admin-token': this.config.token, accept: 'text/event-stream' },
+					agent: this.agent,
+				},
+				(res) => {
+					clearTimeout(connectTimer)
+					const status = res.statusCode ?? 0
+
+					if (status === 401 || status === 403) {
+						res.destroy()
+						reject(new RelayError('auth', 'Admin token rejected', status))
+						return
+					}
+					if (status < 200 || status >= 300) {
+						res.destroy()
+						reject(new RelayError('http', `Relay returned HTTP ${status} for the status stream`, status))
+						return
+					}
+
+					resolve(res)
+				},
+			)
+
+			// Bounds the connect, not the stream: once the response arrives the
+			// watchdog on the frames themselves takes over.
+			const connectTimer = setTimeout(() => {
+				req.destroy(new RelayError('connection', `No response from ${this.config.host}:${this.config.port}`))
+			}, connectTimeout)
+
+			req.on('error', (error: NodeJS.ErrnoException) => {
+				clearTimeout(connectTimer)
+				reject(toRelayError(error, this.config))
+			})
+
+			req.end()
+		})
+	}
+
 	async request<T>(request: RelayRequest): Promise<T> {
 		const url = new URL(request.path, this.baseUrl)
 		const payload = request.body === undefined ? undefined : Buffer.from(JSON.stringify(request.body))
