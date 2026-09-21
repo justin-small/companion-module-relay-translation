@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Lint, typecheck, test and build
+    name: Lint, typecheck, test, validate and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -24,3 +24,7 @@ jobs:
       - run: npm run build
       - run: npm run lint
       - run: npm test
+      - name: Validate the module against Bitfocus's own checker
+        run: npm run check
+      - name: Package as Companion would
+        run: npm run package

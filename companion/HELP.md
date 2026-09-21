@@ -7,6 +7,25 @@ clock.
 > The module is feature-complete: connection, actions, variables, feedbacks
 > and presets. Start from **Presets** rather than building buttons by hand.
 
+### Quick start
+
+If you have never set up Relay, someone running it can read you these four
+things from the machine it is on.
+
+1. **Host** — the Relay machine's LAN address, and **Port** `8443`.
+2. **Admin token** — printed by Relay's `setup.sh` / `setup.command` /
+   `setup.bat`, and shown again in Relay's own operator panel.
+3. Leave **Use HTTPS** and **Accept self-signed certificate** on.
+4. Optionally paste the **certificate fingerprint** that the same setup script
+   printed, under the heading _Operator panel certificate_.
+
+Save. The connection goes green within a second or two. Then open
+**Presets → Relay** and drag the buttons you want onto a page — they arrive
+working.
+
+If it does not go green, the instance status says which of the four is wrong:
+a rejected token and a refused certificate are different messages.
+
 ### Connecting
 
 Relay binds its admin socket to loopback, and Caddy proxies `/admin` and
@@ -152,8 +171,32 @@ offers, so changing Relay's source language changes the list.
 
 Relay mints its own certificate per machine — a venue LAN has no public DNS
 name and no ACME challenge to answer, so a public CA is not an option. Accept
-the self-signed certificate, and preferably also paste the SHA-256 fingerprint
-that `setup.*` prints, which turns "trust anything" into "trust this one host".
+the self-signed certificate, and preferably also paste the SHA-256
+fingerprint, which turns "trust anything" into "trust this one host".
+
+Relay's setup script prints the fingerprint under **Operator panel
+certificate**, and tells the operator to write it down — it is the same value
+they check in the browser the first time they open Relay's panel. It is also
+re-printed by `tools/setup_caddy.py` on the Relay host. Paste it with or
+without colons, in any case; the module normalises it.
+
+A pinned fingerprint wins over the checkbox: if the certificate on the far end
+is not that one, the module refuses the connection and says the fingerprint it
+actually saw, so you can tell a re-minted certificate from a wrong host.
+
+### If something looks wrong
+
+| What you see                                   | What it means                                                                                                                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Instance red, "Admin token rejected"           | Wrong token. The module keeps retrying, so fixing it recovers without a restart.                                                                                                     |
+| Instance red, certificate wording              | Either turn on **Accept self-signed certificate**, or the pinned fingerprint does not match what Relay presented.                                                                    |
+| Instance red, "Nothing answering"              | Wrong host or port, or Relay is down. Port `8443` is Caddy, not Relay's admin socket.                                                                                                |
+| A target button is amber and will not go green | The language is enabled but capture is stopped. Press Start.                                                                                                                         |
+| Start does nothing and the log shows an error  | Relay refused it, and the log carries Relay's own words — usually no OpenAI API key, or no audio device.                                                                             |
+| `$(relay:viewers)` looks stuck                 | Relay only re-reports the viewer count when something else about its state changes. Relay's own panel has the same lag: [Relay#29](https://github.com/justin-small/Relay/issues/29). |
+
+Everything the module logs goes to Companion's own log page, prefixed with the
+connection name.
 
 ### Where the admin token lives
 
