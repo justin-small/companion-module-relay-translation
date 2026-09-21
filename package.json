@@ -10,6 +10,7 @@
 		"format": "prettier -w .",
 		"lint": "eslint .",
 		"lint:raw": "eslint",
+		"check": "companion-module-check",
 		"test": "vitest run",
 		"package": "npm run build && companion-module-build"
 	},
