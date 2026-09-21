@@ -1,0 +1,38 @@
+{
+	"name": "companion-module-relay-translation",
+	"version": "1.0.0",
+	"main": "dist/main.js",
+	"type": "commonjs",
+	"license": "MIT",
+	"scripts": {
+		"build": "rimraf dist && tsc -p tsconfig.build.json",
+		"dev": "tsc -p tsconfig.build.json --watch",
+		"format": "prettier -w .",
+		"lint": "eslint .",
+		"lint:raw": "eslint",
+		"package": "npm run build && companion-module-build"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/justin-small/companion-module-relay-translation.git"
+	},
+	"bugs": {
+		"url": "https://github.com/justin-small/companion-module-relay-translation/issues"
+	},
+	"engines": {
+		"node": "^18.18 || ^22.8"
+	},
+	"dependencies": {
+		"@companion-module/base": "^1.14.1"
+	},
+	"devDependencies": {
+		"@companion-module/tools": "^2.8.0",
+		"@types/node": "^18.19.0",
+		"eslint": "^9.36.0",
+		"prettier": "^3.6.2",
+		"rimraf": "^6.0.1",
+		"typescript": "~5.9.0",
+		"typescript-eslint": "^8.44.1"
+	},
+	"prettier": "@companion-module/tools/.prettierrc.json"
+}

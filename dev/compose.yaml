@@ -1,0 +1,24 @@
+# Companion with this module mounted as a developer module.
+#
+#   npm install && npm run build      # the container will not build it for you
+#   docker compose -f dev/compose.yaml up -d
+#   open http://localhost:8000
+#
+# Companion's entrypoint installs dependencies for any module under
+# /app/module-local-dev that has no node_modules, using yarn. This repo uses
+# npm, so install and build on the host first and the container skips that step.
+services:
+  companion:
+    image: ghcr.io/bitfocus/companion/companion:latest
+    ports:
+      - '8000:8000'
+    volumes:
+      - companion-config:/companion
+      - ..:/app/module-local-dev/companion-module-relay-translation
+    extra_hosts:
+      # So a Relay (or dev/fake-relay.cjs) on the host is reachable as
+      # host.docker.internal from inside the container.
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  companion-config:
