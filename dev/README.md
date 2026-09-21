@@ -25,6 +25,30 @@ Companion's entrypoint installs and builds any developer module that has no
 above) and the container leaves it alone. Rebuild and restart the connection —
 or the container — to pick up a change.
 
+## Against the real Relay
+
+The stand-in covers the module's own logic; the transport — Caddy, TLS, the
+1 Hz meter tick — needs Relay itself. From a Relay checkout:
+
+```sh
+docker compose -f docker/docker-compose.yml build
+OPENAI_KEY=... ADMIN_TOKEN=... RELAY_ADMIN_FQDN=host.docker.internal \
+  docker compose -f docker/docker-compose.yml run --rm --no-deps \
+  -e OPENAI_KEY -e ADMIN_TOKEN -e RELAY_ADMIN_FQDN relay python tools/write_config.py
+RELAY_ADMIN_IPS=<lan-ip> docker compose -f docker/docker-compose.yml run --rm --no-deps \
+  -e RELAY_ADMIN_IPS relay python tools/setup_caddy.py     # prints the fingerprint
+RELAY_HTTP_PORT=8080 RELAY_HTTPS_PORT=8443 docker compose -f docker/docker-compose.yml up -d
+```
+
+`RELAY_ADMIN_FQDN=host.docker.internal` puts the name the Companion container
+dials into the certificate, and `setup_caddy.py` prints the SHA-256 to paste
+into the fingerprint field. Port 8443 is the module's default, which keeps the
+connection config identical to a venue install.
+
+Capture will not start on a Mac — Docker Desktop has no sound card and the
+OpenAI key can be a placeholder — but every admin endpoint, the status stream
+and the certificate are the real ones.
+
 Status messages land in Companion's own log at <http://localhost:8000/log>;
 `docker compose -f dev/compose.yaml logs` has the process-level ones.
 
