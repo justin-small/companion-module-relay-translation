@@ -4,10 +4,10 @@ Controls a [Relay](https://github.com/justin-small/Relay) host: start and stop
 capture, toggle target languages, watch the input meter, and run a session
 clock.
 
-> **Not finished yet.** The module holds a live connection to Relay, drives it
-> and publishes its state as variables. Feedbacks and presets arrive in the
-> issues that follow, so buttons act and can show text but do not yet light
-> up.
+> **Not finished yet.** The module holds a live connection to Relay, drives
+> it, publishes its state as variables and lights buttons from it. Presets
+> arrive in the issue that follows, so buttons have to be built by hand for
+> now.
 
 ### Connecting
 
@@ -101,6 +101,36 @@ than the module guessing from when it first saw it running.
 A meter reading goes blank, rather than to zero, when Relay reports no
 measurement at all — blank means "no reading", where `0.00` would mean a live
 input sitting silent.
+
+### Feedbacks
+
+| Feedback                        | Lights when                                           | Default      |
+| ------------------------------- | ----------------------------------------------------- | ------------ |
+| **Capture running**             | Relay is capturing                                    | Green        |
+| **Capture stopped**             | It is not                                             | Grey         |
+| **Relay error**                 | Relay reported an error, or a session failed for good | Red          |
+| **Target live**                 | A session is open for that language                   | Green        |
+| **Target enabled but not live** | Switched on, but carrying nothing                     | Amber        |
+| **Speaking**                    | Relay hears speech                                    | Green        |
+| **Audio clipping**              | The input is hitting the rail                         | Red          |
+| **Session reconnecting**        | A session is not connected while capture runs         | Amber        |
+| **Audio level (meter)**         | Always — colours the button from the level            | Green to red |
+
+**Target live** and **Target enabled but not live** are two feedbacks rather
+than one on purpose. In Relay, _enabled_ is configuration and _live_ means a
+translation session is actually open, which cannot happen while capture is
+stopped. One combined green would show a lit button over a language sending
+nothing, which is the one thing an operator must not misread. Put both on a
+language button: amber means armed, green means on the air.
+
+The **audio level** feedback is an advanced one, so it colours the whole
+button rather than sitting behind text: brighter with more level, amber from
+−6 dBFS where headroom runs out, red when clipping. It works from dBFS rather
+than the linear level, which would leave ordinary speech looking dead at the
+bottom of the range.
+
+The defaults are picked to read on an unlit Stream Deck in a dark booth.
+Restyle them freely — Companion keeps your colours.
 
 ### The certificate
 
