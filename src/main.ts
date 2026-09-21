@@ -3,6 +3,7 @@ import { GetConfigFields, validateConfig, type RelayConfig } from './config.js'
 import { RelayClient, RelayError, type RelayRequest } from './client.js'
 import { StatusStream } from './stream.js'
 import { UpdateActions, targetSignature } from './actions.js'
+import { UpdateFeedbacks } from './feedbacks.js'
 import { ClockValues, DisconnectedValues, UpdateVariableDefinitions, VariableValues } from './variables.js'
 import type { RelayStatus } from './types.js'
 
@@ -79,6 +80,7 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 		// dropdown must not keep offering the old one.
 		this.targets = ''
 		UpdateActions(this)
+		UpdateFeedbacks(this)
 		UpdateVariableDefinitions(this)
 		// Blank rather than stale: the numbers on screen must not describe a
 		// host this instance is no longer talking to.
@@ -109,16 +111,18 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 	}
 
 	private handleStatus(status: RelayStatus): void {
-		// Feedbacks hang off this in the issues that follow; the stream already
-		// caches the status for them.
 		const signature = targetSignature(status.targets)
 		if (signature !== this.targets) {
 			this.targets = signature
 			UpdateActions(this)
+			UpdateFeedbacks(this)
 			UpdateVariableDefinitions(this)
 		}
 
 		this.setVariableValues({ ...VariableValues(status), ...ClockValues(status, Date.now()) })
+		// Every frame, including the 1 Hz meter: the level and clipping
+		// feedbacks are only worth having if they move with the input.
+		this.checkFeedbacks()
 	}
 
 	private tickClock(): void {

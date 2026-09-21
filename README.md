@@ -9,8 +9,8 @@ languages, watch the input meter and clipping, and run a session clock.
 
 > **Status: in progress.** The module connects to Relay, holds its status
 > stream open, drives it — start, stop and target toggles — and publishes its
-> state as variables, including the session clock. Feedbacks and presets are
-> filed as issues 6–8.
+> state as variables, including the session clock, and lights buttons from it.
+> Presets and submission readiness are filed as issues 7–8.
 
 ## What it controls
 
@@ -71,10 +71,10 @@ runtime, which loads in both Companion 3.x and 4.x. Base 2.x and the `node22`
 runtime are Companion 4 only; moving to them is a deliberate later decision,
 not an upgrade to make by habit.
 
-Issues 6–8 in this repo carry the rest of the specification, in order. The SSE
+Issues 7–8 in this repo carry the rest of the specification, in order. The SSE
 client (issue 3) is the spine everything reactive hangs off; actions (issue 4)
-are fire-and-forget on top of it, and variables (issue 5) are computed from
-its merged status cache.
+are fire-and-forget on top of it, and variables (issue 5) and feedbacks
+(issue 6) are computed from its merged status cache.
 
 ## Submission
 
