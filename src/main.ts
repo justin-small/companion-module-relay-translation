@@ -3,14 +3,17 @@ import { GetConfigFields, validateConfig, type RelayConfig } from './config.js'
 import { RelayClient, RelayError, type RelayRequest } from './client.js'
 import { StatusStream } from './stream.js'
 import { UpdateActions, targetSignature } from './actions.js'
+import { ClockValues, DisconnectedValues, UpdateVariableDefinitions, VariableValues } from './variables.js'
 import type { RelayStatus } from './types.js'
 
 export class RelayInstance extends InstanceBase<RelayConfig> {
 	config!: RelayConfig
 	private client: RelayClient | null = null
 	private stream: StatusStream | null = null
-	/** The target list the current action definitions were built from. */
+	/** The target list the current action and variable definitions were built from. */
 	private targets = ''
+	/** Advances the session clock between status frames. */
+	private clock: NodeJS.Timeout | null = null
 
 	async init(config: RelayConfig): Promise<void> {
 		this.config = config
@@ -62,6 +65,8 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 	}
 
 	private teardown(): void {
+		if (this.clock) clearInterval(this.clock)
+		this.clock = null
 		this.stream?.stop()
 		this.stream = null
 		this.client?.destroy()
@@ -74,6 +79,10 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 		// dropdown must not keep offering the old one.
 		this.targets = ''
 		UpdateActions(this)
+		UpdateVariableDefinitions(this)
+		// Blank rather than stale: the numbers on screen must not describe a
+		// host this instance is no longer talking to.
+		this.setVariableValues(DisconnectedValues())
 
 		const problem = validateConfig(this.config)
 		if (problem) {
@@ -91,16 +100,31 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 			log: (level, message) => this.log(level, message),
 		})
 		this.stream.start()
+
+		// The clock runs on its own tick, not on the stream. A stall of a few
+		// seconds is survivable and reconnects by itself; a clock that froze
+		// with it would have the operator reading a stopped timer over a show
+		// that is still running.
+		this.clock = setInterval(() => this.tickClock(), 1000)
 	}
 
 	private handleStatus(status: RelayStatus): void {
-		// Variables and feedbacks hang off this in the issues that follow; the
-		// stream already caches the status for them.
+		// Feedbacks hang off this in the issues that follow; the stream already
+		// caches the status for them.
 		const signature = targetSignature(status.targets)
 		if (signature !== this.targets) {
 			this.targets = signature
 			UpdateActions(this)
+			UpdateVariableDefinitions(this)
 		}
+
+		this.setVariableValues({ ...VariableValues(status), ...ClockValues(status, Date.now()) })
+	}
+
+	private tickClock(): void {
+		const status = this.status
+		if (!status?.started_at) return
+		this.setVariableValues(ClockValues(status, Date.now()))
 	}
 
 	private handleDisconnect(error: RelayError, retryInMs: number): void {

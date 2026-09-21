@@ -4,9 +4,10 @@ Controls a [Relay](https://github.com/justin-small/Relay) host: start and stop
 capture, toggle target languages, watch the input meter, and run a session
 clock.
 
-> **Not finished yet.** The module holds a live connection to Relay and can
-> drive it; feedbacks, variables and presets arrive in the issues that follow,
-> so buttons act but do not yet light up.
+> **Not finished yet.** The module holds a live connection to Relay, drives it
+> and publishes its state as variables. Feedbacks and presets arrive in the
+> issues that follow, so buttons act and can show text but do not yet light
+> up.
 
 ### Connecting
 
@@ -62,6 +63,44 @@ would sit there green over a session that never started. If a call fails, the
 reason appears in Companion's log with Relay's own wording — **Start capture**
 with no OpenAI API key configured is the one worth knowing about, and it says
 exactly that.
+
+### Variables
+
+| Variable                                  | What it holds                                                   |
+| ----------------------------------------- | --------------------------------------------------------------- |
+| `$(relay:running)`                        | `Running` or `Stopped`                                          |
+| `$(relay:session_time)`                   | Session clock as `H:MM:SS`, or `--:--` when stopped             |
+| `$(relay:session_time_seconds)`           | The same as a plain number, for expressions                     |
+| `$(relay:source_language)`                | What Relay is listening for                                     |
+| `$(relay:viewers)`                        | Viewers connected to the caption page                           |
+| `$(relay:targets_live)`                   | How many languages are actually running                         |
+| `$(relay:targets_live_labels)`            | Their names, comma-separated                                    |
+| `$(relay:level)`                          | Input level, 0–1                                                |
+| `$(relay:rms_dbfs)`, `$(relay:peak_dbfs)` | Input level in dBFS                                             |
+| `$(relay:clipping)`, `$(relay:speaking)`  | `Yes` or `No`                                                   |
+| `$(relay:clipped_samples)`                | Running count since capture started                             |
+| `$(relay:error)`                          | Relay's last error, empty when there is none                    |
+| `$(relay:sessions_error)`                 | Translation sessions in trouble — reconnecting, failed or fatal |
+| `$(relay:target_spanish_state)`           | Per language: `live`, `enabled` or `off`                        |
+
+There is one `target_<language>_state` variable per target Relay offers, named
+from the language — `target_spanish_state`, `target_french_state` — and the
+set changes with Relay's source language.
+
+`enabled` and `live` are not the same thing, and the difference is worth a
+button. A target is **enabled** in Relay's configuration and **live** only
+when a translation session is actually open for it, which cannot happen while
+capture is stopped.
+
+The session clock runs on its own once-a-second tick rather than on Relay's
+status stream, so a stream that stalls for a moment does not freeze the timer
+over a show that is still running. It reads correctly when Companion connects
+part-way through a session, because Relay reports when capture started rather
+than the module guessing from when it first saw it running.
+
+A meter reading goes blank, rather than to zero, when Relay reports no
+measurement at all — blank means "no reading", where `0.00` would mean a live
+input sitting silent.
 
 ### The certificate
 
