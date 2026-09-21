@@ -7,9 +7,9 @@ captioning and translation for remote viewers.
 Put the show on a Stream Deck: start and stop capture, toggle target
 languages, watch the input meter and clipping, and run a session clock.
 
-> **Status: scaffold.** The module loads in Companion and holds its
-> configuration; nothing talks to Relay yet. The remaining work is filed as
-> issues 2–8.
+> **Status: in progress.** The module connects to Relay, holds its status
+> stream open and drives it — start, stop and target toggles all work.
+> Feedbacks, variables and presets are filed as issues 5–8.
 
 ## What it controls
 
@@ -70,8 +70,9 @@ runtime, which loads in both Companion 3.x and 4.x. Base 2.x and the `node22`
 runtime are Companion 4 only; moving to them is a deliberate later decision,
 not an upgrade to make by habit.
 
-Issues 2–8 in this repo carry the rest of the specification, in order. The SSE
-client (issue 3) is the spine everything reactive hangs off.
+Issues 5–8 in this repo carry the rest of the specification, in order. The SSE
+client (issue 3) is the spine everything reactive hangs off; actions (issue 4)
+are fire-and-forget on top of it.
 
 ## Submission
 

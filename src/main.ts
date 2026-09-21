@@ -1,13 +1,16 @@
 import { InstanceBase, InstanceStatus, runEntrypoint, type SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, validateConfig, type RelayConfig } from './config.js'
-import { RelayClient, RelayError } from './client.js'
+import { RelayClient, RelayError, type RelayRequest } from './client.js'
 import { StatusStream } from './stream.js'
+import { UpdateActions, targetSignature } from './actions.js'
 import type { RelayStatus } from './types.js'
 
 export class RelayInstance extends InstanceBase<RelayConfig> {
 	config!: RelayConfig
 	private client: RelayClient | null = null
 	private stream: StatusStream | null = null
+	/** The target list the current action definitions were built from. */
+	private targets = ''
 
 	async init(config: RelayConfig): Promise<void> {
 		this.config = config
@@ -37,6 +40,27 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 		return this.stream?.lastStatus ?? null
 	}
 
+	/**
+	 * Fire a request at Relay and report a failure rather than throwing.
+	 *
+	 * Actions are fire-and-forget: nothing here touches cached state, because
+	 * the truth comes back over the stream. What it must not do is swallow the
+	 * error — a start refused for want of an API key is the likeliest failure
+	 * of the night, and Relay's own wording is the useful part.
+	 */
+	async send(request: RelayRequest, description: string): Promise<void> {
+		if (!this.client) {
+			this.log('error', `${description} failed: not connected to Relay`)
+			return
+		}
+		try {
+			await this.client.request(request)
+		} catch (error) {
+			const message = error instanceof RelayError ? error.message : String(error)
+			this.log('error', `${description} failed: ${message}`)
+		}
+	}
+
 	private teardown(): void {
 		this.stream?.stop()
 		this.stream = null
@@ -46,6 +70,10 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 
 	private applyConfig(): void {
 		this.teardown()
+		// Rebuild from scratch: a new host has its own target list, and the
+		// dropdown must not keep offering the old one.
+		this.targets = ''
+		UpdateActions(this)
 
 		const problem = validateConfig(this.config)
 		if (problem) {
@@ -65,9 +93,14 @@ export class RelayInstance extends InstanceBase<RelayConfig> {
 		this.stream.start()
 	}
 
-	private handleStatus(_status: RelayStatus): void {
+	private handleStatus(status: RelayStatus): void {
 		// Variables and feedbacks hang off this in the issues that follow; the
 		// stream already caches the status for them.
+		const signature = targetSignature(status.targets)
+		if (signature !== this.targets) {
+			this.targets = signature
+			UpdateActions(this)
+		}
 	}
 
 	private handleDisconnect(error: RelayError, retryInMs: number): void {

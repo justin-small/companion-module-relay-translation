@@ -14,6 +14,7 @@ const fs = require('fs')
 const TOKEN = process.env.RELAY_TOKEN || 'good-token'
 const CERT_DIR = __dirname + '/certs'
 const started = { at: null }
+const enabled = { ES: true, FR: false }
 
 const state = () => ({
 	config: { source_language: 'en' },
@@ -27,8 +28,20 @@ const state = () => ({
 		blocklist: [],
 		source_language: 'en',
 		targets: [
-			{ target: 'ES', label: 'Spanish', language_label: 'Spanish', enabled: true, live: !!started.at },
-			{ target: 'FR', label: 'French', language_label: 'French', enabled: false, live: false },
+			{
+				target: 'ES',
+				label: 'Spanish',
+				language_label: 'Spanish',
+				enabled: enabled.ES,
+				live: enabled.ES && !!started.at,
+			},
+			{
+				target: 'FR',
+				label: 'French',
+				language_label: 'French',
+				enabled: enabled.FR,
+				live: enabled.FR && !!started.at,
+			},
 		],
 	},
 	devices: [],
@@ -84,6 +97,24 @@ const server = https.createServer(
 			started.at = null
 			res.writeHead(200, { 'content-type': 'application/json' })
 			res.end(JSON.stringify({ ok: true }))
+			return
+		}
+		const target = url.pathname.match(/^\/api\/admin\/target\/(.+)$/)
+		if (target) {
+			const name = decodeURIComponent(target[1]).toUpperCase()
+			if (!(name in enabled)) {
+				res.writeHead(404, { 'content-type': 'application/json' })
+				res.end(JSON.stringify({ error: `unknown target ${name}` }))
+				return
+			}
+			let body = ''
+			req.on('data', (chunk) => (body += chunk))
+			req.on('end', () => {
+				enabled[name] = !!JSON.parse(body || '{}').enabled
+				console.log('target', name, enabled[name])
+				res.writeHead(200, { 'content-type': 'application/json' })
+				res.end(JSON.stringify({ ok: true, enabled: enabled[name] }))
+			})
 			return
 		}
 		res.writeHead(404, { 'content-type': 'application/json' })
