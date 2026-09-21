@@ -7,16 +7,18 @@ captioning and translation for remote viewers.
 Put the show on a Stream Deck: start and stop capture, toggle target
 languages, watch the input meter and clipping, and run a session clock.
 
-> **Status: planning.** No code yet. The work is filed as issues 1–8.
+> **Status: scaffold.** The module loads in Companion and holds its
+> configuration; nothing talks to Relay yet. The remaining work is filed as
+> issues 2–8.
 
 ## What it controls
 
-| | |
-|---|---|
-| **Actions** | Start / stop / toggle capture, enable–disable–toggle a target language, "enable only this target" |
-| **Feedbacks** | Running, stopped, error, target live, target enabled-but-not-live, speaking, clipping, audio level, session reconnecting |
+|               |                                                                                                                                                    |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Actions**   | Start / stop / toggle capture, enable–disable–toggle a target language, "enable only this target"                                                  |
+| **Feedbacks** | Running, stopped, error, target live, target enabled-but-not-live, speaking, clipping, audio level, session reconnecting                           |
 | **Variables** | Session clock, running state, source language, viewer count, live target count and labels, level / RMS / peak dBFS, clipping, speaking, error text |
-| **Presets** | Start, Stop, Toggle, session clock, one toggle per target, audio meter, viewer count, at-a-glance status |
+| **Presets**   | Start, Stop, Toggle, session clock, one toggle per target, audio meter, viewer count, at-a-glance status                                           |
 
 ## How it talks to Relay
 
@@ -52,8 +54,24 @@ connects mid-event or reconnects.
 
 ## Building it
 
-Issues 1–8 in this repo carry the full specification, in order. Issue 1 is the
-scaffold; the SSE client (issue 3) is the spine everything reactive hangs off.
+```sh
+npm install
+npm run build     # tsc to dist/
+npm run lint
+npm run package   # companion-module-build, produces a .tgz
+```
+
+To load it in Companion, point Companion's developer modules path at this
+checkout — it reads `companion/manifest.json` and the built `dist/main.js`, so
+run `npm run build` first and `npm run dev` while working.
+
+The module is built against `@companion-module/base` 1.x with the `node18`
+runtime, which loads in both Companion 3.x and 4.x. Base 2.x and the `node22`
+runtime are Companion 4 only; moving to them is a deliberate later decision,
+not an upgrade to make by habit.
+
+Issues 2–8 in this repo carry the rest of the specification, in order. The SSE
+client (issue 3) is the spine everything reactive hangs off.
 
 ## Submission
 

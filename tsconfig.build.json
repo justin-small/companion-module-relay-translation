@@ -1,0 +1,9 @@
+{
+	"extends": "@companion-module/tools/tsconfig/node18/recommended.json",
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules/**", "src/**/*spec.ts", "src/**/__tests__/*"],
+	"compilerOptions": {
+		"outDir": "./dist",
+		"rootDir": "./src"
+	}
+}

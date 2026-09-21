@@ -1,0 +1,27 @@
+{
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
+	"id": "relay-translation",
+	"name": "relay-translation",
+	"shortname": "Relay",
+	"description": "Live captioning and translation relay: start/stop capture, toggle target languages, audio meter and session clock",
+	"version": "1.0.0",
+	"license": "MIT",
+	"repository": "git+https://github.com/justin-small/companion-module-relay-translation.git",
+	"bugs": "https://github.com/justin-small/companion-module-relay-translation/issues",
+	"maintainers": [
+		{
+			"name": "Justin Small",
+			"github": "justin-small"
+		}
+	],
+	"runtime": {
+		"type": "node18",
+		"api": "nodejs-ipc",
+		"apiVersion": "1.14.1",
+		"entrypoint": "../dist/main.js"
+	},
+	"legacyIds": [],
+	"manufacturer": "Relay",
+	"products": ["Relay"],
+	"keywords": ["captioning", "translation", "transcription", "accessibility"]
+}
