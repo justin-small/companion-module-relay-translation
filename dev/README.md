@@ -22,13 +22,13 @@ In Companion: **Add Connection → Relay: Relay**, then set the host to
 
 Companion's entrypoint installs and builds any developer module that has no
 `node_modules`, using yarn. This repo uses npm, so build on the host first (as
-above) and the container leaves it alone. Rebuild and restart the connection —
-or the container — to pick up a change.
+above) and the container leaves it alone. Rebuild and restart the connection,
+or the container, to pick up a change.
 
 ## Against the real Relay
 
-The stand-in covers the module's own logic; the transport — Caddy, TLS, the
-1 Hz meter tick — needs Relay itself. From a Relay checkout:
+The stand-in covers the module's own logic. The transport (Caddy, TLS, the
+1 Hz meter tick) needs Relay itself. From a Relay checkout:
 
 ```sh
 docker compose -f docker/docker-compose.yml build
@@ -42,12 +42,13 @@ RELAY_HTTP_PORT=8080 RELAY_HTTPS_PORT=8443 docker compose -f docker/docker-compo
 
 `RELAY_ADMIN_FQDN=host.docker.internal` puts the name the Companion container
 dials into the certificate, and `setup_caddy.py` prints the SHA-256 to paste
-into the fingerprint field. Port 8443 is the module's default, which keeps the
-connection config identical to a venue install.
+into the fingerprint field. Publishing the panel on 8443 matches the module's
+default port. A venue install publishes it on 443 instead, so set the port to
+443 there.
 
-Capture will not start on a Mac — Docker Desktop has no sound card and the
-OpenAI key can be a placeholder — but every admin endpoint, the status stream
-and the certificate are the real ones.
+Capture will not start with this setup: it wires in no audio, and the OpenAI
+key can be a placeholder. Every admin endpoint, the status stream and the
+certificate are the real ones.
 
 Status messages land in Companion's own log at <http://localhost:8000/log>;
 `docker compose -f dev/compose.yaml logs` has the process-level ones.
