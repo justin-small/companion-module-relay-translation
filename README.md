@@ -52,6 +52,14 @@ One change is needed on the Relay side, tracked there:
 expose a session start timestamp so the clock is correct even when Companion
 connects mid-event or reconnects.
 
+## Installing it
+
+On Companion 4 or later, download `relay-translation-<version>.tgz` from the
+[latest release](https://github.com/justin-small/companion-module-relay-translation/releases/latest)
+and import it on the **Modules** page with **Import module package**.
+Companion 3 has no import button: build from source (below) and use the
+developer modules path.
+
 ## Building it
 
 ```sh
@@ -79,6 +87,19 @@ The SSE client (issue 3) is the spine everything reactive hangs off; actions
 CI runs lint, typecheck, tests, the Bitfocus validator and a packaging build
 on every push, so a change that would fail submission fails the branch
 instead.
+
+## Releasing
+
+Bump the version in both `package.json` and `companion/manifest.json`, add a
+changelog entry, commit, then push a matching tag:
+
+```sh
+git tag v1.1.0 && git push origin v1.1.0
+```
+
+`.github/workflows/release.yaml` refuses a tag that disagrees with either
+file, runs the same checks as CI, and publishes a GitHub release with the
+`.tgz` attached. A tag with a hyphen (`v1.1.0-beta.1`) becomes a pre-release.
 
 ## Changelog
 
