@@ -1,21 +1,21 @@
 # companion-module-relay-translation
 
 A [Bitfocus Companion](https://bitfocus.io/companion) module for
-[Relay](https://github.com/justin-small/Relay) — server-captured live
+[Relay](https://github.com/justin-small/Relay), server-captured live
 captioning and translation for remote viewers.
 
 Put the show on a Stream Deck: start and stop capture, toggle target
 languages, watch the input meter and clipping, and run a session clock.
 
-> **Status: feature-complete.** Connection, actions, variables, feedbacks and
-> presets all work against a real Relay. Remaining work is documentation and
-> submission readiness (issue 8).
+> **Status: released.** Connection, actions, variables, feedbacks and presets
+> all work against a real Relay. See [Releases](https://github.com/justin-small/companion-module-relay-translation/releases)
+> for the packaged module.
 
 ## What it controls
 
 |               |                                                                                                                                                    |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Actions**   | Start / stop / toggle capture, enable–disable–toggle a target language, "enable only this target"                                                  |
+| **Actions**   | Start / stop / toggle capture, enable / disable / toggle a target language, "enable only this target"                                              |
 | **Feedbacks** | Running, stopped, error, target live, target enabled-but-not-live, speaking, clipping, audio level, session reconnecting                           |
 | **Variables** | Session clock, running state, source language, viewer count, live target count and labels, level / RMS / peak dBFS, clipping, speaking, error text |
 | **Presets**   | Start, Stop, Toggle, session clock, one toggle per target, audio meter, viewer count, at-a-glance status                                           |
@@ -23,7 +23,7 @@ languages, watch the input meter and clipping, and run a session clock.
 ## How it talks to Relay
 
 Relay's admin API accepts a static `x-admin-token` header, so the module needs
-only a host, a port and the admin token — no login flow.
+only a host, a port and the admin token. There is no login flow.
 
 State arrives over a single server-sent-events stream
 (`GET /api/admin/status/stream`), which pushes full status on change and a
@@ -32,14 +32,17 @@ in well under a second.
 
 ### Two things to know before deploying
 
-**Companion must reach Relay on 8443.** Relay's admin socket is bound to
-loopback by design; Caddy proxies `/api/admin/*` on the HTTPS port. A Companion
-box elsewhere on the venue LAN has exactly one way in.
+**Companion must reach Relay on the panel's HTTPS port: 443 on a normal
+install.** Relay's admin socket is bound to loopback by design; Caddy proxies
+`/api/admin/*` on the HTTPS port. A Companion box elsewhere on the venue LAN
+has exactly one way in. Caddy listens on 8443 inside Relay's container and
+Docker publishes it as 443, so 8443 is only right when Relay was started with
+`RELAY_HTTPS_PORT=8443`. The module's default port is still 8443; set 443.
 
-**The certificate is self-signed.** Relay mints it per-machine — there is no
-public DNS name on a venue LAN and no ACME challenge to answer. The module
-offers an "accept self-signed" checkbox, and optionally pins the SHA-256
-fingerprint that Relay's `setup.*` prints, which is the setting worth using.
+**The certificate is self-signed.** Relay mints it per machine, because a venue
+LAN has no public DNS name and no ACME challenge to answer. The module offers
+an "accept self-signed" checkbox, and can also pin the SHA-256 fingerprint that
+Relay's `setup.*` prints. Pinning is the setting to use.
 
 **The admin token is stored in Companion's config database in plaintext.**
 That is Companion's design, not something this module can change. Treat the
@@ -47,10 +50,9 @@ Companion host as being as trusted as the Relay host.
 
 ## Relationship to Relay
 
-One change is needed on the Relay side, tracked there:
-[justin-small/Relay#27](https://github.com/justin-small/Relay/issues/27) —
-expose a session start timestamp so the clock is correct even when Companion
-connects mid-event or reconnects.
+The session clock reads Relay's `started_at`
+([justin-small/Relay#27](https://github.com/justin-small/Relay/issues/27)), so it
+is correct even when Companion connects mid-event or reconnects.
 
 ## Installing it
 
@@ -71,22 +73,22 @@ npm run check     # companion-module-check, Bitfocus's own validator
 npm run package   # companion-module-build, produces a .tgz
 ```
 
-To load it in Companion, point Companion's developer modules path at this
-checkout — it reads `companion/manifest.json` and the built `dist/main.js`, so
-run `npm run build` first and `npm run dev` while working.
+To load it in Companion, point Companion's developer modules path at the folder
+that contains this checkout. Companion reads `companion/manifest.json` and the
+built `dist/main.js`, so run `npm run build` first and `npm run dev` while
+working.
 
 The module is built against `@companion-module/base` 1.x with the `node18`
-runtime, which loads in both Companion 3.x and 4.x. Base 2.x and the `node22`
-runtime are Companion 4 only; moving to them is a deliberate later decision,
-not an upgrade to make by habit.
+runtime, which loads in Companion 3.x, 4.x and 5.x. Base 2.x and the `node22`
+runtime need Companion 4 or later, so moving to them would drop Companion 3.
+That is a decision to make on purpose, not a routine upgrade.
 
-The SSE client (issue 3) is the spine everything reactive hangs off; actions
-(issue 4) are fire-and-forget on top of it, and variables (issue 5), feedbacks
-(issue 6) and presets (issue 7) are computed from its merged status cache.
+Everything reactive runs off the SSE client (`src/stream.ts`). Actions are
+fire-and-forget calls on top of it, and variables, feedbacks and presets are
+computed from its merged status cache.
 
 CI runs lint, typecheck, tests, the Bitfocus validator and a packaging build
-on every push, so a change that would fail submission fails the branch
-instead.
+on every push, so a change that would fail submission fails its branch first.
 
 ## Releasing
 
@@ -122,15 +124,14 @@ First release. Everything below works against a real Relay host.
 - Presets for all of the above, including one per target language.
 
 Known limitation: `viewers` only refreshes when Relay pushes a full status
-frame, so it can lag. Relay's own panel has the same lag —
-[Relay#29](https://github.com/justin-small/Relay/issues/29).
+frame, so it can lag. Relay's own panel has the same lag
+([Relay#29](https://github.com/justin-small/Relay/issues/29)).
 
 ## Submission
 
-The module is built to be submission-ready for the Bitfocus module list —
-manifest, HELP.md, license, CI and a clean `companion-module-check` — but
-submitting it is a deliberate non-goal. It is not an oversight. If that
-changes, the work left is opening a pull request against
+The module is built to be ready for the Bitfocus module list: manifest,
+HELP.md, license, CI and a clean `companion-module-check`. It has not been
+submitted, and that is deliberate. If that changes, the work left is opening a pull request against
 [bitfocus/companion-module-requests](https://github.com/bitfocus/companion-module-requests),
 and confirming the module id does not collide with one already in the list.
 
