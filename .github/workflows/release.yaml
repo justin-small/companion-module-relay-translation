@@ -1,0 +1,62 @@
+name: Release
+
+# Push a version tag and this publishes the GitHub release:
+#
+#   npm version 1.1.0 --no-git-tag-version   # then set the same version in
+#                                            # companion/manifest.json, commit
+#   git tag v1.1.0 && git push origin v1.1.0
+#
+# The asset is relay-translation-<version>.tgz, the package Companion's
+# "Import module package" button takes. The tag must match the version in both
+# package.json and companion/manifest.json, or nothing is published: the .tgz
+# name and the version Companion shows both come from the manifest.
+#
+# A tag with a hyphen (v1.1.0-beta.1) is published as a pre-release.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches package.json and manifest
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(node -p "require('./package.json').version")
+          man=$(node -p "require('./companion/manifest.json').version")
+          echo "tag=$tag package.json=$pkg manifest=$man"
+          [[ "$tag" == "$pkg" && "$tag" == "$man" ]] || {
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json ($pkg) and manifest.json ($man)"
+            exit 1
+          }
+      - name: Use Node.js 18.x
+        # Matches the runtime.type in companion/manifest.json
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
+      - run: npm test
+      - run: npm run check
+      - name: Package as Companion would
+        run: npm run package
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          [[ "$GITHUB_REF_NAME" == *-* ]] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" "relay-translation-${GITHUB_REF_NAME#v}.tgz" \
+            --verify-tag --title "Relay module ${GITHUB_REF_NAME}" --generate-notes "${flags[@]}"
