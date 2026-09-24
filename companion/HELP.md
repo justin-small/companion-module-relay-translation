@@ -12,7 +12,7 @@ clock.
 If you have never set up Relay, someone running it can read you these four
 things from the machine it is on.
 
-1. **Host** — the Relay machine's LAN address, and **Port** `8443`.
+1. **Host** — the Relay machine's LAN address, and **Port** `443`.
 2. **Admin token** — printed by Relay's `setup.sh` / `setup.command` /
    `setup.bat`, and shown again in Relay's own operator panel.
 3. Leave **Use HTTPS** and **Accept self-signed certificate** on.
@@ -29,20 +29,20 @@ a rejected token and a refused certificate are different messages.
 ### Connecting
 
 Relay binds its admin socket to loopback, and Caddy proxies `/admin` and
-`/api/admin/*` on the HTTPS port (8443 by default). A Companion box elsewhere
+`/api/admin/*` on the HTTPS port (443 by default). A Companion box elsewhere
 on the venue LAN reaches Relay through that port and no other.
 
 You need the host, the port, and the admin token that Relay's `setup.*` script
 prints.
 
-| Field                               | Notes                                                                                                                     |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Host**                            | IP address or hostname of the Relay machine                                                                               |
-| **Port**                            | `8443` unless you changed Relay's `admin_port`                                                                            |
-| **Admin token**                     | Printed by Relay's `setup.*` script                                                                                       |
-| **Use HTTPS**                       | On for a normal install. Off only for a same-host or reverse-proxied deployment.                                          |
-| **Accept self-signed certificate**  | On by default — Relay's certificate is self-signed by design                                                              |
-| **Certificate SHA-256 fingerprint** | Optional. When set, the connection is pinned to that certificate and anything else is refused, even with the checkbox on. |
+| Field                               | Notes                                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Host**                            | IP address or hostname of the Relay machine                                                                                    |
+| **Port**                            | `443`, the port of Relay's operator panel address. The box starts at `8443`: change it unless Relay publishes the panel there. |
+| **Admin token**                     | Printed by Relay's `setup.*` script                                                                                            |
+| **Use HTTPS**                       | On for a normal install. Off only for a same-host or reverse-proxied deployment.                                               |
+| **Accept self-signed certificate**  | On by default — Relay's certificate is self-signed by design                                                                   |
+| **Certificate SHA-256 fingerprint** | Optional. When set, the connection is pinned to that certificate and anything else is refused, even with the checkbox on.      |
 
 ### Staying connected
 
@@ -190,7 +190,7 @@ actually saw, so you can tell a re-minted certificate from a wrong host.
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Instance red, "Admin token rejected"           | Wrong token. The module keeps retrying, so fixing it recovers without a restart.                                                                                                     |
 | Instance red, certificate wording              | Either turn on **Accept self-signed certificate**, or the pinned fingerprint does not match what Relay presented.                                                                    |
-| Instance red, "Nothing answering"              | Wrong host or port, or Relay is down. Port `8443` is Caddy, not Relay's admin socket.                                                                                                |
+| Instance red, "Nothing answering"              | Wrong host or port, or Relay is down. A normal install answers on `443`, not `8443`.                                                                                                 |
 | A target button is amber and will not go green | The language is enabled but capture is stopped. Press Start.                                                                                                                         |
 | Start does nothing and the log shows an error  | Relay refused it, and the log carries Relay's own words — usually no OpenAI API key, or no audio device.                                                                             |
 | `$(relay:viewers)` looks stuck                 | Relay only re-reports the viewer count when something else about its state changes. Relay's own panel has the same lag: [Relay#29](https://github.com/justin-small/Relay/issues/29). |

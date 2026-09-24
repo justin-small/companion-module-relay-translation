@@ -32,9 +32,12 @@ in well under a second.
 
 ### Two things to know before deploying
 
-**Companion must reach Relay on 8443.** Relay's admin socket is bound to
-loopback by design; Caddy proxies `/api/admin/*` on the HTTPS port. A Companion
-box elsewhere on the venue LAN has exactly one way in.
+**Companion must reach Relay on the panel's HTTPS port: 443 on a normal
+install.** Relay's admin socket is bound to loopback by design; Caddy proxies
+`/api/admin/*` on the HTTPS port. A Companion box elsewhere on the venue LAN
+has exactly one way in. Caddy listens on 8443 inside Relay's container and
+Docker publishes it as 443, so 8443 is only right when Relay was started with
+`RELAY_HTTPS_PORT=8443`. The module's default port is still 8443; set 443.
 
 **The certificate is self-signed.** Relay mints it per-machine — there is no
 public DNS name on a venue LAN and no ACME challenge to answer. The module

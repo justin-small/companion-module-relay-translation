@@ -28,7 +28,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Tag matches package.json and manifest
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -41,7 +41,7 @@ jobs:
           }
       - name: Use Node.js 18.x
         # Matches the runtime.type in companion/manifest.json
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 18.x
           cache: npm
